@@ -1,9 +1,15 @@
-import { _decorator, Component, Vec3, input, Input, EventMouse, Animation } from 'cc';
+import { _decorator, Component, Vec3, input, Input, systemEvent, SystemEvent, EventMouse, Animation, SkeletalAnimation } from "cc";
 const { ccclass, property } = _decorator;
 
-@ccclass('PlayerController')
+@ccclass("PlayerController")
 export class PlayerController extends Component {
-    // 是否接收到跳跃指令
+
+    @property({ type: Animation })
+    public BodyAnim: Animation | null = null;
+    // @property({type: SkeletalAnimation})
+    // public CocosAnim: SkeletalAnimation|null = null;
+
+    // for fake tween
     private _startJump: boolean = false;
 
     // 跳跃步长
@@ -27,13 +33,16 @@ export class PlayerController extends Component {
     // 角色目标位置
     private _targetPos: Vec3 = new Vec3();
 
-    @property({type: Animation})
-    public BodyAnim:Animation | null = null;
+    private _curMoveIndex = 0;
+
 
     start() {
 
         // input.on(Input.EventType.MOUSE_UP, this.onMouseUp, this);
+    }
 
+    reset() {
+        this._curMoveIndex = 0;
     }
 
     setInputActive(active: boolean) {
@@ -43,7 +52,7 @@ export class PlayerController extends Component {
             input.off(Input.EventType.MOUSE_UP, this.onMouseUp, this);
         }
     }
-    
+
     onMouseUp(event: EventMouse) {
         if (event.getButton() === 0) {
             this.jumpByStep(1);
@@ -71,6 +80,11 @@ export class PlayerController extends Component {
         this._curJumpSpeed = this._jumpStep / this._jumpTime;
         this.node.getPosition(this._curPos);
         Vec3.add(this._targetPos, this._curPos, new Vec3(this._jumpStep, 0, 0));
+        this._curMoveIndex += step;
+    }
+
+    onOnceJumpEnd() {
+        this.node.emit('JumpEnd', this._curMoveIndex);
     }
 
     update(deltaTime: number) {
